@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daniele Geraldino — Direção de Arte</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --cream: #EDE9DF;
+    --dark: #1a1a18;
+    --mid: #888880;
+    --white: #ffffff;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Times New Roman', Georgia, serif;
+    background: var(--cream);
+    color: var(--dark);
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CURSOR */
+  #cursor {
+    position: fixed; top: 0; left: 0;
+    width: 10px; height: 10px;
+    background: var(--dark); border-radius: 50%;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s, background 0.3s, border 0.3s;
+  }
+  #cursor-follower {
+    position: fixed; top: 0; left: 0;
+    width: 36px; height: 36px;
+    border: 1px solid var(--dark); border-radius: 50%;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: all 0.12s ease; opacity: 0.5;
+  }
+
+  /* LOADER */
+  #loader {
+    position: fixed; inset: 0;
+    background: var(--dark); z-index: 9000;
+    display: flex; align-items: flex-end;
+    padding: 40px 48px;
+    transition: transform 0.9s cubic-bezier(0.76, 0, 0.24, 1);
+  }
+  #loader.hide { transform: translateY(-100%); }
+  #loader-count {
+    font-size: clamp(80px, 18vw, 220px);
+    color: var(--cream); font-weight: 900;
+    line-height: 0.85; letter-spacing: -0.04em;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 800; padding: 20px 32px;
+    display: flex; justify-content: space-between; align-items: center;
+    mix-blend-mode: difference;
+  }
+  nav .logo {
+    font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--cream); text-decoration: none;
+    font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 500;
+  }
+  nav ul { list-style: none; display: flex; gap: 32px; }
+  nav ul a {
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--cream); text-decoration: none;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    position: relative;
+  }
+  nav ul a::after {
+    content: ''; position: absolute; bottom: -2px; left: 0;
+    width: 0; height: 1px; background: var(--cream);
+    transition: width 0.3s ease;
+  }
+  nav ul a:hover::after { width: 100%; }
+
+  /* HERO */
+  #hero {
+    height: 100svh; background: var(--cream);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    overflow: hidden; position: relative;
+  }
+  .hero-label {
+    position: absolute; right: 32px; bottom: calc(50% + 20px);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--mid); writing-mode: vertical-rl;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 0.8s 1.6s, transform 0.8s 1.6s;
+  }
+  .hero-label.visible { opacity: 1; transform: translateY(0); }
+  .hero-name {
+    font-size: clamp(72px, 14vw, 200px); font-weight: 900;
+    line-height: 0.84; letter-spacing: -0.04em;
+    padding: 0 24px 12px 24px;
+  }
+  .hero-name .line { overflow: hidden; display: block; }
+  .hero-name .word {
+    display: inline-block; transform: translateY(110%);
+    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .hero-name .word.visible { transform: translateY(0); }
+
+  /* VIDEO */
+  #video-section {
+    background: var(--dark); aspect-ratio: 16/8;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; overflow: hidden;
+  }
+  .play-btn {
+    width: 80px; height: 80px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.5);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s;
+    position: relative; z-index: 2;
+  }
+  #video-section:hover .play-btn { transform: scale(1.15); border-color: rgba(255,255,255,0.9); }
+  .play-btn svg { width: 24px; fill: white; margin-left: 4px; }
+  .video-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #2a2a28 0%, #111110 100%);
+  }
+
+  /* ABOUT */
+  #about {
+    padding: 100px 32px 60px;
+    display: grid; grid-template-columns: 1fr 200px;
+    gap: 48px; align-items: start;
+    max-width: 1200px; margin: 0 auto; width: 100%;
+  }
+  .about-text { opacity: 0; transform: translateY(40px); transition: opacity 0.8s, transform 0.8s; }
+  .about-text.visible { opacity: 1; transform: translateY(0); }
+  .about-text p { font-size: clamp(18px, 2.5vw, 26px); line-height: 1.45; max-width: 520px; }
+  .about-text p strong { font-style: italic; }
+  .about-text .saber-mais {
+    display: inline-block; margin-top: 20px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--mid); text-decoration: none;
+    border-bottom: 1px solid var(--mid); padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .about-text .saber-mais:hover { color: var(--dark); border-color: var(--dark); }
+  .polaroid {
+    width: 160px; background: white; padding: 10px 10px 30px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    transform: rotate(3deg) translateY(-20px);
+    opacity: 0; transition: opacity 0.8s 0.3s, transform 0.8s 0.3s;
+  }
+  .polaroid.visible { opacity: 1; transform: rotate(3deg) translateY(0); }
+  .polaroid:hover { transform: rotate(1deg) scale(1.03) translateY(-4px); transition: transform 0.3s; }
+  .polaroid-inner { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, #7a9db8, #b8ccd8, #6e8fa6); }
+
+  /* PROJECTS */
+  .section-label {
+    padding: 24px 32px; border-top: 1px solid rgba(0,0,0,0.12);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mid);
+    max-width: 1200px; margin: 0 auto; width: 100%;
+    opacity: 0; transform: translateY(20px); transition: opacity 0.6s, transform 0.6s;
+  }
+  .section-label.visible { opacity: 1; transform: translateY(0); }
+  .projects-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .project-card {
+    aspect-ratio: 4/3; overflow: hidden; position: relative;
+    cursor: none; opacity: 0; transform: translateY(50px);
+    transition: opacity 0.7s, transform 0.7s;
+  }
+  .project-card.visible { opacity: 1; transform: translateY(0); }
+  .project-card-inner {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #999 0%, #777 100%);
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    background-size: cover; background-position: center;
+  }
+  .project-card:hover .project-card-inner { transform: scale(1.04); }
+  .project-card-overlay {
+    position: absolute; inset: 0; background: rgba(20,20,18,0);
+    transition: background 0.4s; display: flex; align-items: flex-end; padding: 24px;
+  }
+  .project-card:hover .project-card-overlay { background: rgba(20,20,18,0.55); }
+  .project-info { transform: translateY(16px); opacity: 0; transition: transform 0.4s, opacity 0.4s; }
+  .project-card:hover .project-info { transform: translateY(0); opacity: 1; }
+  .project-info h3 { font-size: 18px; color: white; font-weight: 700; margin-bottom: 4px; }
+  .project-info span {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px; color: rgba(255,255,255,0.65);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .project-info a {
+    display: inline-block; margin-top: 8px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 10px; color: rgba(255,255,255,0.8);
+    letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.4); padding-bottom: 1px;
+  }
+  /* Loading skeleton */
+  .project-skeleton {
+    aspect-ratio: 4/3; background: linear-gradient(90deg, #ccc 25%, #ddd 50%, #ccc 75%);
+    background-size: 200% 100%; animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* BRANDS */
+  #brands {
+    border-top: 1px solid rgba(0,0,0,0.12); padding: 32px 0;
+    overflow: hidden; display: flex; align-items: center; gap: 32px;
+  }
+  .brands-label {
+    flex-shrink: 0; padding-left: 32px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--mid); white-space: nowrap;
+  }
+  .marquee-track {
+    display: flex; gap: 20px;
+    animation: marquee 20s linear infinite; flex-shrink: 0;
+  }
+  .brand-pill {
+    background: var(--dark); color: var(--cream);
+    padding: 10px 24px; font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    white-space: nowrap; border-radius: 2px; flex-shrink: 0;
+  }
+  @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+  /* CONTACT FORM */
+  #contact-section {
+    padding: 80px 32px; max-width: 1200px; margin: 0 auto;
+    border-top: 1px solid rgba(0,0,0,0.12);
+  }
+  .contact-title {
+    font-size: clamp(32px, 5vw, 64px); font-weight: 900;
+    letter-spacing: -0.03em; margin-bottom: 48px;
+    opacity: 0; transform: translateY(30px); transition: opacity 0.8s, transform 0.8s;
+  }
+  .contact-title.visible { opacity: 1; transform: translateY(0); }
+  .contact-form {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 700px;
+    opacity: 0; transform: translateY(30px); transition: opacity 0.8s 0.2s, transform 0.8s 0.2s;
+  }
+  .contact-form.visible { opacity: 1; transform: translateY(0); }
+  .contact-form .full { grid-column: 1 / -1; }
+  .contact-form input,
+  .contact-form textarea {
+    width: 100%; background: transparent;
+    border: none; border-bottom: 1px solid rgba(0,0,0,0.25);
+    padding: 14px 0; font-size: 16px; font-family: inherit;
+    color: var(--dark); outline: none;
+    transition: border-color 0.3s;
+  }
+  .contact-form input:focus,
+  .contact-form textarea:focus { border-color: var(--dark); }
+  .contact-form input::placeholder,
+  .contact-form textarea::placeholder { color: var(--mid); font-size: 14px; }
+  .contact-form textarea { resize: none; height: 100px; }
+  .submit-btn {
+    grid-column: 1 / -1; background: var(--dark); color: var(--cream);
+    border: none; padding: 18px 40px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase;
+    cursor: none; transition: background 0.3s, transform 0.2s;
+    align-self: start; justify-self: start;
+  }
+  .submit-btn:hover { background: #333; }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:disabled { opacity: 0.5; }
+  #form-msg {
+    grid-column: 1/-1; font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px; padding: 12px 0; display: none;
+  }
+  #form-msg.success { color: #2a7a2a; display: block; }
+  #form-msg.error { color: #c0392b; display: block; }
+
+  /* FOOTER */
+  footer {
+    background: var(--dark); color: var(--cream);
+    padding: 80px 32px; overflow: hidden;
+  }
+  .footer-big {
+    font-size: clamp(48px, 10vw, 140px); font-weight: 900;
+    line-height: 0.85; letter-spacing: -0.04em; margin-bottom: 60px;
+    opacity: 0; transform: translateY(40px); transition: opacity 0.8s, transform 0.8s;
+  }
+  .footer-big.visible { opacity: 1; transform: translateY(0); }
+  .footer-big a {
+    color: var(--cream); text-decoration: none;
+    position: relative; display: inline-block;
+  }
+  .footer-big a::after {
+    content: ''; position: absolute; bottom: 4px; left: 0;
+    width: 100%; height: 4px; background: var(--cream);
+    transform: scaleX(0); transform-origin: right; transition: transform 0.4s ease;
+  }
+  .footer-big a:hover::after { transform: scaleX(1); transform-origin: left; }
+  .footer-meta {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-top: 1px solid rgba(255,255,255,0.12); padding-top: 32px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px; letter-spacing: 0.08em; color: rgba(237,233,223,0.4);
+    flex-wrap: wrap; gap: 16px;
+    opacity: 0; transition: opacity 1s 0.3s;
+  }
+  .footer-meta.visible { opacity: 1; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { color: rgba(237,233,223,0.4); text-decoration: none; text-transform: uppercase; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--cream); }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-follower"></div>
+
+<div id="loader"><div id="loader-count">0</div></div>
+
+<nav>
+  <a href="#" class="logo">DG</a>
+  <ul>
+    <li><a href="#about">Origem</a></li>
+    <li><a href="#projects">Projetos</a></li>
+    <li><a href="#contact-section">Contato</a></li>
+  </ul>
+</nav>
+
+<section id="hero">
+  <div class="hero-name">
+    <span class="line"><span class="word" id="w1">Daniele</span></span>
+    <span class="line" style="padding-left:2vw"><span class="word" id="w2">Geraldino</span></span>
+  </div>
+  <div class="hero-label" id="hero-label">Direção de Arte</div>
+</section>
+
+<div id="video-section">
+  <div class="video-overlay"></div>
+  <div class="play-btn">
+    <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+  </div>
+</div>
+
+<div style="max-width:1200px;margin:0 auto;width:100%;">
+  <section id="about">
+    <div class="about-text" id="about-text">
+      <p><strong><em>Direção de arte</em></strong> é encontrar o ponto onde conceito e forma se tornam inseparáveis. Trabalho na fronteira entre identidade visual, design editorial e experiências digitais.</p>
+      <a href="#projects" class="saber-mais">saber mais →</a>
+    </div>
+    <div class="polaroid" id="polaroid">
+      <div class="polaroid-inner"></div>
+    </div>
+  </section>
+</div>
+
+<section id="projects" style="padding-bottom:80px;">
+  <div class="section-label" id="section-label">alguns projetos</div>
+  <div class="projects-grid" id="projects-grid">
+    <!-- Loaded from Supabase -->
+    <div class="project-skeleton"></div>
+    <div class="project-skeleton"></div>
+    <div class="project-skeleton"></div>
+    <div class="project-skeleton"></div>
+  </div>
+</section>
+
+<div id="brands">
+  <span class="brands-label">marcas que contribui</span>
+  <div class="marquee-track" id="marquee-track">
+    <!-- Loaded from Supabase or fallback -->
+  </div>
+</div>
+
+<section id="contact-section">
+  <div class="contact-title" id="contact-title">Vamos conversar</div>
+  <form class="contact-form" id="contact-form" onsubmit="return false;">
+    <input type="text" id="cf-name" placeholder="Nome" required>
+    <input type="email" id="cf-email" placeholder="E-mail" required>
+    <input type="text" id="cf-subject" placeholder="Assunto" class="full">
+    <textarea id="cf-message" placeholder="Mensagem" class="full" required></textarea>
+    <button type="submit" class="submit-btn" id="submit-btn">Enviar mensagem</button>
+    <div id="form-msg"></div>
+  </form>
+</section>
+
+<footer id="footer">
+  <div class="footer-big" id="footer-big">
+    <a href="mailto:daniele@exemplo.com">Vamos<br>trabalhar<br>juntos —</a>
+  </div>
+  <div class="footer-meta" id="footer-meta">
+    <span>© 2026 Daniele Geraldino</span>
+    <div class="footer-links">
+      <a href="#">Instagram</a>
+      <a href="#">Behance</a>
+      <a href="#">LinkedIn</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ─── SUPABASE CONFIG ─────────────────────────────
+// ⚠️  Substitua os valores abaixo pelas suas credenciais do Supabase
+const SUPABASE_URL = 'COLE_SUA_URL_AQUI'
+const SUPABASE_ANON_KEY = 'COLE_SUA_ANON_KEY_AQUI'
+
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+// ─── CURSOR ───────────────────────────────────────
+const cursor = document.getElementById('cursor')
+const follower = document.getElementById('cursor-follower')
+let mx = 0, my = 0, fx = 0, fy = 0
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY
+  cursor.style.left = mx + 'px'; cursor.style.top = my + 'px'
+})
+;(function animFollower() {
+  fx += (mx - fx) * 0.12; fy += (my - fy) * 0.12
+  follower.style.left = fx + 'px'; follower.style.top = fy + 'px'
+  requestAnimationFrame(animFollower)
+})()
+
+// Cursor expand on interactive elements
+document.querySelectorAll('a, button, .project-card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.style.cssText += ';width:56px;height:56px;background:transparent;border:1px solid var(--dark)'
+    follower.style.opacity = '0'
+  })
+  el.addEventListener('mouseleave', () => {
+    cursor.style.cssText = cursor.style.cssText
+      .replace(/width:[^;]+;/g,'').replace(/height:[^;]+;/g,'')
+      .replace(/background:[^;]+;/g,'').replace(/border:[^;]+;/g,'')
+    follower.style.opacity = '0.5'
+  })
+})
+
+// ─── LOADER ───────────────────────────────────────
+const loader = document.getElementById('loader')
+const loaderCount = document.getElementById('loader-count')
+let count = 0
+const countUp = setInterval(() => {
+  count += Math.floor(Math.random() * 12) + 4
+  if (count >= 100) {
+    count = 100; clearInterval(countUp)
+    setTimeout(() => {
+      loader.classList.add('hide')
+      setTimeout(() => {
+        document.getElementById('w1').classList.add('visible')
+        setTimeout(() => document.getElementById('w2').classList.add('visible'), 150)
+        setTimeout(() => document.getElementById('hero-label').classList.add('visible'), 400)
+      }, 100)
+    }, 400)
+  }
+  loaderCount.textContent = count
+}, 40)
+
+// ─── SCROLL REVEAL ────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const delay = parseInt(entry.target.dataset.delay || 0)
+      setTimeout(() => entry.target.classList.add('visible'), delay)
+      observer.unobserve(entry.target)
+    }
+  })
+}, { threshold: 0.15 })
+
+;[
+  ['about-text', 0], ['polaroid', 200], ['section-label', 0],
+  ['contact-title', 0], ['contact-form', 200],
+  ['footer-big', 0], ['footer-meta', 300]
+].forEach(([id, delay]) => {
+  const el = document.getElementById(id)
+  if (el) { el.dataset.delay = delay; observer.observe(el) }
+})
+
+// ─── PROJECTS FROM SUPABASE ───────────────────────
+const FALLBACK_PROJECTS = [
+  { title: 'Identidade Visual', category: 'Branding · 2024', bg: 'linear-gradient(135deg,#a8a89e,#787870)', link: null },
+  { title: 'Design Editorial', category: 'Print · 2024', bg: 'linear-gradient(135deg,#909088,#606058)', link: null },
+  { title: 'Campanha Digital', category: 'Art Direction · 2023', bg: 'linear-gradient(135deg,#7a7a72,#5a5a52)', link: null },
+  { title: 'Motion Design', category: 'Digital · 2023', bg: 'linear-gradient(135deg,#b0b0a8,#888880)', link: null },
+]
+
+async function loadProjects() {
+  const grid = document.getElementById('projects-grid')
+  let projects = FALLBACK_PROJECTS
+
+  if (SUPABASE_URL !== 'COLE_SUA_URL_AQUI') {
+    try {
+      const { data, error } = await db.from('projects').select('*').order('created_at', { ascending: false })
+      if (!error && data && data.length > 0) projects = data
+    } catch (e) { console.warn('Supabase offline, usando fallback') }
+  }
+
+  grid.innerHTML = projects.map((p, i) => `
+    <div class="project-card" id="pc${i}" style="transition-delay:${i*80}ms">
+      <div class="project-card-inner" style="background:${p.image_url ? 'url('+p.image_url+') center/cover' : (p.bg || 'linear-gradient(135deg,#999,#777)')}"></div>
+      <div class="project-card-overlay">
+        <div class="project-info">
+          <h3>${p.title}</h3>
+          <span>${p.category || ''}</span>
+          ${p.link ? `<a href="${p.link}" target="_blank">Ver projeto →</a>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('')
+
+  projects.forEach((_, i) => {
+    const el = document.getElementById('pc' + i)
+    if (el) { el.dataset.delay = i * 80; observer.observe(el) }
+  })
+}
+
+// ─── BRANDS FROM SUPABASE ─────────────────────────
+const FALLBACK_BRANDS = ['Marca A','Marca B','Marca C','Marca D','Marca E','Marca F']
+
+async function loadBrands() {
+  const track = document.getElementById('marquee-track')
+  let brands = FALLBACK_BRANDS
+
+  if (SUPABASE_URL !== 'COLE_SUA_URL_AQUI') {
+    try {
+      const { data, error } = await db.from('brands').select('name')
+      if (!error && data && data.length > 0) brands = data.map(b => b.name)
+    } catch (e) {}
+  }
+
+  // Duplicate for seamless loop
+  const all = [...brands, ...brands]
+  track.innerHTML = all.map(b => `<span class="brand-pill">${b}</span>`).join('')
+}
+
+// ─── CONTACT FORM → SUPABASE ──────────────────────
+document.getElementById('contact-form').addEventListener('submit', async () => {
+  const btn = document.getElementById('submit-btn')
+  const msg = document.getElementById('form-msg')
+  const name = document.getElementById('cf-name').value.trim()
+  const email = document.getElementById('cf-email').value.trim()
+  const subject = document.getElementById('cf-subject').value.trim()
+  const message = document.getElementById('cf-message').value.trim()
+
+  if (!name || !email || !message) return
+
+  if (SUPABASE_URL === 'COLE_SUA_URL_AQUI') {
+    msg.className = 'error'
+    msg.textContent = '⚠️ Configure o Supabase no arquivo index.html'
+    return
+  }
+
+  btn.disabled = true
+  btn.textContent = 'Enviando...'
+  msg.className = ''; msg.style.display = 'none'
+
+  try {
+    const { error } = await db.from('contacts').insert([{ name, email, subject, message }])
+    if (error) throw error
+    msg.className = 'success'
+    msg.textContent = '✓ Mensagem enviada! Entrarei em contato em breve.'
+    document.getElementById('contact-form').reset()
+  } catch (e) {
+    msg.className = 'error'
+    msg.textContent = 'Erro ao enviar. Tente novamente.'
+  } finally {
+    btn.disabled = false
+    btn.textContent = 'Enviar mensagem'
+  }
+})
+
+// ─── INIT ─────────────────────────────────────────
+loadProjects()
+loadBrands()
+</script>
+</body>
+</html>
